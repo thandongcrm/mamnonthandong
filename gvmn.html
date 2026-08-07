@@ -331,7 +331,24 @@
 
     let currentTeacher = null;
 
-    window.addEventListener('DOMContentLoaded', () => {
+   window.addEventListener('DOMContentLoaded', async () => {
+        // Tải dữ liệu từ Firebase Firestore lên mây trước khi chạy
+        try {
+            if (typeof firebase !== 'undefined' && firebase.firestore) {
+                const docSnap = await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").get();
+                if (docSnap.exists) {
+                    appDatabase = docSnap.data();
+                } else {
+                    appDatabase = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || appDatabase;
+                }
+            } else {
+                appDatabase = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || appDatabase;
+            }
+        } catch (e) {
+            console.error("Lỗi tải dữ liệu từ mây:", e);
+            appDatabase = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || appDatabase;
+        }
+
         initTeacherSession();
     });
 
@@ -429,7 +446,7 @@
         contractTable.innerHTML = conHtml;
     }
 
-    function saveTeacherProfile() {
+   async function saveTeacherProfile() {
         const newPass = document.getElementById('p-password').value.trim();
         if (!newPass) {
             alert("Vui lòng nhập mật khẩu mới!");
@@ -442,8 +459,14 @@
         if (index !== -1) {
             appDatabase.teachers[index] = currentTeacher;
         }
+
+        // Lưu backup máy và đẩy lên Firebase
         localStorage.setItem('than_dong_sieu_nhi_db', JSON.stringify(appDatabase));
-        alert("Cập nhật mật khẩu thành công!");
+        if (typeof firebase !== 'undefined' && firebase.firestore) {
+            await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").set(appDatabase);
+        }
+
+        alert("Cập nhật mật khẩu và đồng bộ hệ thống thành công!");
     }
 
     function loadClassSelectors() {
@@ -455,7 +478,7 @@
         if(attClass) attClass.innerHTML = optionsHtml || '<option value="Lớp Mầm">Lớp Mầm</option>';
     }
 
-    function saveLessonItem() {
+   async function saveLessonItem() {
         const className = document.getElementById('sch-class-filter').value;
         const dateVal = document.getElementById('l-date').value || new Date().toISOString().split('T')[0];
         const session = document.getElementById('l-session').value;
@@ -468,6 +491,14 @@
             alert("Vui lòng nhập đầy đủ Tên bài học và Nội dung!");
             return;
         }
+
+        // Đồng bộ dữ liệu mới nhất từ mây tránh đè ghi
+        try {
+            if (typeof firebase !== 'undefined' && firebase.firestore) {
+                const docSnap = await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").get();
+                if (docSnap.exists) appDatabase = docSnap.data();
+            }
+        } catch(e){}
 
         if (!appDatabase.scheduleList) appDatabase.scheduleList = [];
         const lessonObj = { 
@@ -489,10 +520,14 @@
         }
 
         localStorage.setItem('than_dong_sieu_nhi_db', JSON.stringify(appDatabase));
+        if (typeof firebase !== 'undefined' && firebase.firestore) {
+            await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").set(appDatabase);
+        }
+
         document.getElementById('l-title').value = "";
         document.getElementById('l-content').value = "";
         renderTeacherScheduleTable();
-        alert("Đã lưu bài giảng thành công!");
+        alert("Đã lưu và đồng bộ bài giảng về hệ thống chung thành công!");
     }
 
     function renderTeacherScheduleTable() {
@@ -584,7 +619,14 @@
         container.innerHTML = html;
     }
 
-    function toggleStudentAttendance(studentName, dateStr, isPresent) {
+    async function toggleStudentAttendance(studentName, dateStr, isPresent) {
+        try {
+            if (typeof firebase !== 'undefined' && firebase.firestore) {
+                const docSnap = await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").get();
+                if (docSnap.exists) appDatabase = docSnap.data();
+            }
+        } catch(e){}
+
         if (!appDatabase.attendanceRecords) appDatabase.attendanceRecords = [];
         let record = appDatabase.attendanceRecords.find(r => r.date === dateStr && r.studentName === studentName);
         if (record) {
@@ -593,10 +635,14 @@
         } else {
             appDatabase.attendanceRecords.push({ date: dateStr, studentName: studentName, status: isPresent ? 'Present' : 'Absent', teacherName: currentTeacher.name });
         }
+
         localStorage.setItem('than_dong_sieu_nhi_db', JSON.stringify(appDatabase));
+        if (typeof firebase !== 'undefined' && firebase.firestore) {
+            await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").set(appDatabase);
+        }
+
         renderAttendanceClassTable();
     }
-
     function openAddGuestModal() {
         document.getElementById('add-guest-modal').classList.remove('hidden');
         document.getElementById('add-guest-modal').classList.add('flex');
@@ -607,31 +653,56 @@
         document.getElementById('add-guest-modal').classList.add('hidden');
     }
 
-    function saveGuestStudent() {
+   async function saveGuestStudent() {
         const name = document.getElementById('g-name').value.trim();
         const parentName = document.getElementById('g-parent').value.trim();
         const phone = document.getElementById('g-phone').value.trim();
         const className = document.getElementById('att-class-select').value;
         if (!name) { alert("Nhập tên học sinh!"); return; }
 
+        try {
+            if (typeof firebase !== 'undefined' && firebase.firestore) {
+                const docSnap = await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").get();
+                if (docSnap.exists) appDatabase = docSnap.data();
+            }
+        } catch(e){}
+
         if (!appDatabase.guestStudents) appDatabase.guestStudents = [];
         appDatabase.guestStudents.push({ id: 'G-' + Date.now(), name, parentName, phone, className });
+
         localStorage.setItem('than_dong_sieu_nhi_db', JSON.stringify(appDatabase));
+        if (typeof firebase !== 'undefined' && firebase.firestore) {
+            await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").set(appDatabase);
+        }
+
         closeAddGuestModal();
         renderAttendanceClassTable();
-        alert("Thêm học sinh lẻ thành công!");
+        alert("Thêm học sinh lẻ và đồng bộ thành công!");
     }
 
-    function checkInToday() {
+  async function checkInToday() {
         const todayStr = new Date().toISOString().split('T')[0];
+
+        try {
+            if (typeof firebase !== 'undefined' && firebase.firestore) {
+                const docSnap = await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").get();
+                if (docSnap.exists) appDatabase = docSnap.data();
+            }
+        } catch(e){}
+
         if (!appDatabase.attendanceRecords) appDatabase.attendanceRecords = [];
         let existing = appDatabase.attendanceRecords.find(r => r.date === todayStr && r.teacherName === currentTeacher.name && r.type === 'TeacherAttendance');
         if (existing) { alert("Bạn đã chấm công hôm nay rồi!"); return; }
 
         appDatabase.attendanceRecords.push({ date: todayStr, teacherName: currentTeacher.name, status: 'Present', type: 'TeacherAttendance' });
+
         localStorage.setItem('than_dong_sieu_nhi_db', JSON.stringify(appDatabase));
+        if (typeof firebase !== 'undefined' && firebase.firestore) {
+            await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").set(appDatabase);
+        }
+
         renderTeacherAttendanceHistory();
-        alert("Chấm công thành công!");
+        alert("Chấm công thành công và đã đồng bộ lên hệ thống!");
     }
 
     function renderTeacherAttendanceHistory() {
