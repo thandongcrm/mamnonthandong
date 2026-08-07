@@ -6135,7 +6135,27 @@ function generateStudentEmail() {
     
     document.getElementById('s-email').value = emailPrefix + '@thandong.com';
 }
-
+async function loadDataFromCloud() {
+    try {
+        if (typeof firebase !== 'undefined' && firebase.firestore) {
+            const docSnap = await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").get();
+            if (docSnap.exists) {
+                appDatabase = docSnap.data();
+            } else {
+                appDatabase = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || {};
+            }
+        } else {
+            appDatabase = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || {};
+        }
+    } catch (error) {
+        console.error("Lỗi tải dữ liệu:", error);
+        appDatabase = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || {};
+    }
+    
+    const savedTab = localStorage.getItem('current_admin_tab') || "01";
+    if (typeof renderMenu === 'function') renderMenu();
+    if (typeof switchTab === 'function') switchTab(savedTab);
+}
     </script>
 <!-- Dán đoạn này vào tất cả các file HTML -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
