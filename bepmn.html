@@ -67,10 +67,25 @@
     let currentStaff = null;
     let appDatabase = {};
 
-    window.onload = function() {
-        const storedUser = localStorage.getItem('currentUser');
-        appDatabase = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || {};
+    window.onload = async function() {
+        // Tải dữ liệu trực tiếp từ Firebase Firestore lên mây
+        try {
+            if (typeof firebase !== 'undefined' && firebase.firestore) {
+                const docSnap = await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").get();
+                if (docSnap.exists) {
+                    appDatabase = docSnap.data();
+                } else {
+                    appDatabase = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || {};
+                }
+            } else {
+                appDatabase = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || {};
+            }
+        } catch (e) {
+            console.error("Lỗi tải dữ liệu:", e);
+            appDatabase = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || {};
+        }
 
+        const storedUser = localStorage.getItem('currentUser');
         if (storedUser) {
             currentStaff = JSON.parse(storedUser);
         } else {
@@ -244,9 +259,17 @@
         `;
     }
 
-    function saveKitchenExpenseItem(e) {
+   async function saveKitchenExpenseItem(e) {
         e.preventDefault();
-        appDatabase = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || { kitchenExpenses: [] };
+        
+        // Cập nhật lại appDatabase mới nhất từ mây/máy trước khi push
+        try {
+            if (typeof firebase !== 'undefined' && firebase.firestore) {
+                const docSnap = await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").get();
+                if (docSnap.exists) appDatabase = docSnap.data();
+            }
+        } catch (err) {}
+
         if (!appDatabase.kitchenExpenses) appDatabase.kitchenExpenses = [];
 
         const date = document.getElementById('ke-date').value;
@@ -263,7 +286,12 @@
         };
 
         appDatabase.kitchenExpenses.push(newItem);
+
+        // Lưu đồng thời lên localStorage và Firebase Firestore
         localStorage.setItem('than_dong_sieu_nhi_db', JSON.stringify(appDatabase));
+        if (typeof firebase !== 'undefined' && firebase.firestore) {
+            await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").set(appDatabase);
+        }
 
         alert("Đã lưu và đồng bộ khoản chi bếp về trang quản trị Admin thành công!");
         e.target.reset();
@@ -271,12 +299,22 @@
         switchTab('expense');
     }
 
-    function deleteKitchenExpense(id) {
+   async function deleteKitchenExpense(id) {
         if (confirm("Xác nhận xóa khoản chi bếp này?")) {
-            appDatabase = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || {};
+            try {
+                if (typeof firebase !== 'undefined' && firebase.firestore) {
+                    const docSnap = await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").get();
+                    if (docSnap.exists) appDatabase = docSnap.data();
+                }
+            } catch (err) {}
+
             if (appDatabase.kitchenExpenses) {
                 appDatabase.kitchenExpenses = appDatabase.kitchenExpenses.filter(item => item.id !== id);
+                
                 localStorage.setItem('than_dong_sieu_nhi_db', JSON.stringify(appDatabase));
+                if (typeof firebase !== 'undefined' && firebase.firestore) {
+                    await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").set(appDatabase);
+                }
                 switchTab('expense');
             }
         }
@@ -352,8 +390,14 @@
         gridContainer.innerHTML = daysHtml;
     }
 
-    function toggleStaffAttendance(dateStr, isChecked) {
-        appDatabase = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || { attendanceRecords: [] };
+    async function toggleStaffAttendance(dateStr, isChecked) {
+        try {
+            if (typeof firebase !== 'undefined' && firebase.firestore) {
+                const docSnap = await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").get();
+                if (docSnap.exists) appDatabase = docSnap.data();
+            }
+        } catch (err) {}
+
         if (!appDatabase.attendanceRecords) appDatabase.attendanceRecords = [];
 
         appDatabase.attendanceRecords = appDatabase.attendanceRecords.filter(r => 
@@ -370,6 +414,10 @@
         }
 
         localStorage.setItem('than_dong_sieu_nhi_db', JSON.stringify(appDatabase));
+        if (typeof firebase !== 'undefined' && firebase.firestore) {
+            await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").set(appDatabase);
+        }
+        
         buildAttendanceCalendarDays();
     }
 
@@ -536,7 +584,5 @@
 
     <!-- Nhúng file cấu hình -->
     <script src="firebase-config.js"></script>
-</body>
-</html>
 </body>
 </html>
