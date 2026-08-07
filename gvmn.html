@@ -749,7 +749,30 @@
             window.location.href = 'index.html';
         }, 500);
     }
+function switchTab(tabId) {
+        // Ẩn tất cả các tab content
+        const contents = document.querySelectorAll('.tab-content');
+        contents.forEach(el => el.classList.add('hidden'));
 
+        // Hiển thị tab được chọn
+        const targetTab = document.getElementById(`tab-${tabId}`);
+        if (targetTab) {
+            targetTab.classList.remove('hidden');
+        }
+
+        // Cập nhật lại màu sắc nút điều hướng dưới chân trang
+        const buttons = document.querySelectorAll('nav button');
+        buttons.forEach(btn => {
+            btn.classList.remove('text-orange-600');
+            btn.classList.add('text-gray-400');
+        });
+
+        const activeBtn = document.getElementById(`btn-tab-${tabId}`);
+        if (activeBtn) {
+            activeBtn.classList.remove('text-gray-400');
+            activeBtn.classList.add('text-orange-600');
+        }
+    }
 </script>
 <!-- Dán đoạn này vào tất cả các file HTML -->
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
