@@ -101,8 +101,21 @@
         }, 400);
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
         paperConfettiEffect();
+        
+        // Tải dữ liệu mới nhất từ Firebase về máy khi vừa mở trang đăng nhập
+        try {
+            if (typeof firebase !== 'undefined' && firebase.firestore) {
+                const docSnap = await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").get();
+                if (docSnap.exists) {
+                    const cloudData = docSnap.data();
+                    localStorage.setItem('than_dong_sieu_nhi_db', JSON.stringify(cloudData));
+                }
+            }
+        } catch (e) {
+            console.error("Lỗi đồng bộ dữ liệu đăng nhập từ mây:", e);
+        }
     });
 
     function handleLogin(e) {
