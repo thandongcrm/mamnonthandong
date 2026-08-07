@@ -907,24 +907,43 @@
     function saveKitchenExpenseItem(e) {
         e.preventDefault();
         
-        // Lấy dữ liệu từ localStorage chung
-        let appDatabase = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || { kitchenExpenses: [] };
-        if (!appDatabase.kitchenExpenses) appDatabase.kitchenExpenses = [];
+       // Khởi tạo appDatabase trống ban đầu
+        let appDatabase = {};
 
-        const date = document.getElementById('ke-date').value;
-        const itemName = document.getElementById('ke-item').value.trim();
-        const amount = parseFloat(document.getElementById('ke-amount').value) || 0;
-        
-        // Lấy tên nhân viên bếp đang đăng nhập (hoặc mặc định)
-        const staffName = "Trần Văn Bình"; 
-
-        const newItem = {
-            id: "KE" + Date.now(),
-            date,
-            itemName,
-            amount,
-            staffName
-        };
+        // Hàm tải dữ liệu tự động từ Firebase Firestore
+        async function loadDataFromCloud() {
+            try {
+                // Kiểm tra xem Firebase đã khởi tạo chưa
+                if (typeof firebase !== 'undefined' && firebase.firestore) {
+                    const dbCloud = firebase.firestore();
+                    const docSnap = await dbCloud.collection("schoolSystem").doc("than_dong_sieu_nhi_main").get();
+                    
+                    if (docSnap.exists) {
+                        appDatabase = docSnap.data();
+                        console.log("Đã tải dữ liệu thành công từ Firebase!");
+                    } else {
+                        // Nếu trên mây chưa có thì lấy tạm localStorage cũ hoặc dữ liệu mặc định đẩy lên
+                        appDatabase = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || {
+                            overview: {},
+                            students: [],
+                            // ... (giữ lại các mảng dữ liệu mặc định của bạn ở đây nếu muốn)
+                        };
+                        await dbCloud.collection("schoolSystem").doc("than_dong_sieu_nhi_main").set(appDatabase);
+                    }
+                } else {
+                    // Fallback phòng hờ nếu chưa nhận diện được Firebase
+                    appDatabase = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || {};
+                }
+            } catch (error) {
+                console.error("Lỗi tải dữ liệu từ mây:", error);
+                appDatabase = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || {};
+            }
+            
+            // Sau khi tải xong dữ liệu thì vẽ giao diện
+            const savedTab = localStorage.getItem('current_admin_tab') || "01";
+            renderMenu();
+            switchTab(savedTab);
+        }
 
         appDatabase.kitchenExpenses.push(newItem);
         localStorage.setItem('than_dong_sieu_nhi_db', JSON.stringify(appDatabase));
@@ -1091,8 +1110,20 @@
     
 };
 
-        function triggerAutoSave() {
+       async function triggerAutoSave() {
+            // Lưu backup vào localStorage
             localStorage.setItem('than_dong_sieu_nhi_db', JSON.stringify(appDatabase));
+
+            // Đẩy lên Firebase Firestore để đồng bộ chung cho tất cả các máy
+            try {
+                if (typeof firebase !== 'undefined' && firebase.firestore) {
+                    const dbCloud = firebase.firestore();
+                    await dbCloud.collection("schoolSystem").doc("than_dong_sieu_nhi_main").set(appDatabase);
+                }
+            } catch (error) {
+                console.error("Lỗi đồng bộ lên Firebase:", error);
+            }
+
             const timeString = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             document.getElementById('last-save-time').innerText = timeString;
             
@@ -1102,7 +1133,6 @@
                 statusBox.classList.remove('bg-emerald-600/90');
             }, 800);
         }
-
         function renderMenu() {
             const menuContainer = document.getElementById('sidebar-menu');
             menuContainer.innerHTML = "";
@@ -2196,12 +2226,8 @@ function updateOverviewData() {
 }
 
         window.onload = () => {
-    // === ĐỌC LẠI TAB ĐÃ LƯU TRƯỚC ĐÓ, NẾU KHÔNG CÓ THÌ MẶC ĐỊNH LÀ "01" ===
-    const savedTab = localStorage.getItem('current_admin_tab') || "01";
-    
-    renderMenu();
-    switchTab(savedTab);
-};
+            loadDataFromCloud(); // Gọi hàm tải dữ liệu thay vì render trực tiếp
+        };
         // --- XỬ LÝ MODAL VÀ DỮ LIỆU GIÁO VIÊN ---
 function openTeacherModal(index) {
     const modalTitle = document.getElementById('teacher-modal-title');
@@ -6118,7 +6144,5 @@ function generateStudentEmail() {
 
     <!-- Nhúng file cấu hình -->
     <script src="firebase-config.js"></script>
-</body>
-</html>
 </body>
 </html>
