@@ -1,17 +1,14 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, getDocs, setDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-// Lấy trực tiếp từ khung trên màn hình của bạn:
+// Cấu hình Firebase chuẩn cho phiên bản Compat (Dán đè toàn bộ nội dung vào file firebase-config.js)
 const firebaseConfig = {
-    apiKey: "AIzaSyBE3PkAPgI3OUblV8e6B12RdXU-gx9gFHI",
-    authDomain: "crmmamnon.firebaseapp.com",
+    apiKey: "ĐIỀN_API_KEY_CỦA_BẠN_VÀO_ĐÂY",
+    authDomain: "ĐIỀN_AUTH_DOMAIN_CỦA_BẠN_VÀO_ĐÂY",
     projectId: "crmmamnon",
-    storageBucket: "crmmamnon.appos.appspot.com", // hoặc crmmamnon.appspot.com tùy theo dòng hiển thị đầy đủ của bạn
-    messagingSenderId: "759420339515",
-    appId: "1:759420339515:web:66900a20d0eb59bc73a31e"
+    storageBucket: "ĐIỀN_STORAGE_BUCKET_CỦA_BẠN_VÀO_ĐÂY",
+    messagingSenderId: "ĐIỀN_MESSAGING_SENDER_ID_CỦA_BẠN_VÀO_ĐÂY",
+    appId: "ĐIỀN_APP_ID_CỦA_BẠN_VÀO_ĐÂY"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-export { db, collection, getDocs, setDoc, doc };
+// Khởi tạo Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
