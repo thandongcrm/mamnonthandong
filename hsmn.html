@@ -69,11 +69,25 @@
     let currentStudent = null;
     let appDatabase = {};
 
-    window.onload = function() {
+    window.onload = async function() {
+        // Tải dữ liệu từ Firebase Firestore lên mây trước khi render
+        try {
+            if (typeof firebase !== 'undefined' && firebase.firestore) {
+                const docSnap = await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").get();
+                if (docSnap.exists) {
+                    appDatabase = docSnap.data();
+                } else {
+                    appDatabase = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || {};
+                }
+            } else {
+                appDatabase = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || {};
+            }
+        } catch (e) {
+            console.error("Lỗi tải dữ liệu từ mây:", e);
+            appDatabase = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || {};
+        }
+
         const storedUser = localStorage.getItem('currentUser');
-        appDatabase = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || {};
-        
-        // Chuyển đổi linh hoạt nếu students là Object hoặc Array
         let rawStudents = appDatabase.students || [];
         const studentsList = Array.isArray(rawStudents) ? rawStudents : Object.values(rawStudents);
 
@@ -85,7 +99,6 @@
 
         const parsedUser = JSON.parse(storedUser);
 
-        // Lọc chính xác học sinh từ database của admin theo email hoặc mã code hoặc tên
         let matchedStudent = null;
         if (parsedUser.email) {
             matchedStudent = studentsList.find(s => s.email && s.email.trim().toLowerCase() === parsedUser.email.trim().toLowerCase());
@@ -103,7 +116,6 @@
             currentStudent = parsedUser;
         }
 
-        // Cập nhật lại session chính xác tuyệt đối theo đúng cá nhân học sinh đó
         localStorage.setItem('currentUser', JSON.stringify(currentStudent));
 
         updateHeaderInfo();
@@ -269,12 +281,20 @@
         `;
     }
 
-    function changePasswordSystem() {
+    async function changePasswordSystem() {
         const newPass = document.getElementById('new-password-input').value.trim();
         if (!newPass) {
             alert("Vui lòng nhập mật khẩu mới!");
             return;
         }
+
+        // Tải dữ liệu mới nhất từ Firebase để tránh xung đột ghi đè
+        try {
+            if (typeof firebase !== 'undefined' && firebase.firestore) {
+                const docSnap = await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").get();
+                if (docSnap.exists) appDatabase = docSnap.data();
+            }
+        } catch (e) {}
 
         currentStudent.pass = newPass;
         
@@ -292,10 +312,15 @@
             }
         }
         
+        // Lưu đồng thời xuống localStorage và đẩy lên Firebase Firestore
         localStorage.setItem('than_dong_sieu_nhi_db', JSON.stringify(appDatabase));
         localStorage.setItem('currentUser', JSON.stringify(currentStudent));
 
-        alert("🎉 Đổi mật khẩu thành công! Hệ thống đã đồng bộ.");
+        if (typeof firebase !== 'undefined' && firebase.firestore) {
+            await firebase.firestore().collection("schoolSystem").doc("than_dong_sieu_nhi_main").set(appDatabase);
+        }
+
+        alert("🎉 Đổi mật khẩu thành công! Hệ thống đã đồng bộ toàn cục.");
         document.getElementById('new-password-input').value = '';
     }
 
