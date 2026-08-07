@@ -1,10 +1,10 @@
 const firebaseConfig = {
-    apiKey: "Dán_API_Key_của_bạn_vào_đây",
-    authDomain: "Dán_Auth_Domain_của_bạn_vào_đây",
+    apiKey: "AIzaSy...",
+    authDomain: "crmmamnon.firebaseapp.com",
     projectId: "crmmamnon",
-    storageBucket: "Dán_Storage_Bucket_của_bạn_vào_đây",
-    messagingSenderId: "Dán_Messaging_Sender_Id_vào_đây",
-    appId: "Dán_App_Id_của_bạn_vào_đây"
+    storageBucket: "crmmamnon.appspot.com",
+    messagingSenderId: "123456789...",
+    appId: "1:123456789..."
 };
 
 // Khởi tạo Firebase Compat
