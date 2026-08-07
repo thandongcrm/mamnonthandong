@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cổng Đăng Nhập - Thần Đồng Siêu Nhí</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body { font-family: 'Quicksand', sans-serif; overflow: hidden; }
+        @keyframes pandaWalkSlow {
+            0% { transform: translateX(-150px) scaleX(1); }
+            49% { transform: translateX(calc(100vw - 150px)) scaleX(1); }
+            50% { transform: translateX(calc(100vw - 150px)) scaleX(-1); }
+            99% { transform: translateX(-150px) scaleX(-1); }
+            100% { transform: translateX(-150px) scaleX(1); }
+        }
+        .panda-container {
+            position: fixed;
+            bottom: 5px;
+            left: 0;
+            animation: pandaWalkSlow 28s linear infinite;
+            z-index: 20;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-orange-500 via-amber-500 to-orange-600 min-h-screen flex items-center justify-center p-4 relative">
+
+    <!-- CHÚ GẤU TRÚC TO HƠN, ĐI CHẬM, DỄ THƯƠNG, KHÔNG KÈM CHỮ -->
+    <div class="panda-container">
+        <div class="text-7xl filter drop-shadow-[0_5px_15px_rgba(0,0,0,0.3)] transform -scale-x-100">🐼</div>
+    </div>
+
+    <!-- MÀN HÌNH CHÀO MỪNG KHI ĐĂNG NHẬP THÀNH CÔNG -->
+    <div id="welcome-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden flex-col items-center justify-center z-50 p-6 text-center space-y-4">
+        <div class="text-6xl animate-bounce">🎉</div>
+        <h2 id="welcome-text" class="text-3xl md:text-4xl font-black text-amber-300 drop-shadow-lg"></h2>
+        <p class="text-white text-sm font-bold tracking-wider uppercase">Đang chuyển vào hệ thống...</p>
+    </div>
+
+    <!-- KHUNG FORM ĐĂNG NHẬP -->
+    <div class="bg-white/95 backdrop-blur-xl w-full max-w-md rounded-[35px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden border border-orange-200 p-8 space-y-6 relative z-30">
+        
+        <!-- LOGO & TIÊU ĐỀ -->
+        <div class="text-center space-y-2">
+            <div class="inline-flex bg-gradient-to-tr from-orange-500 to-amber-400 text-white p-4 rounded-3xl shadow-lg text-3xl mb-1 transform hover:rotate-12 transition duration-300">
+                <i class="fa-solid fa-child-reaching"></i>
+            </div>
+            <h1 class="text-2xl font-black text-gray-800 tracking-tight">Thần Đồng Siêu Nhí</h1>
+            <p class="text-xs text-orange-600 font-extrabold uppercase tracking-widest bg-orange-50 py-1 px-3 rounded-full inline-block">Cổng Đăng Nhập</p>
+        </div>
+
+        <!-- FORM NHẬP LIỆU -->
+        <form onsubmit="handleLogin(event)" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1.5"><i class="fa-solid fa-envelope mr-1 text-orange-500"></i> Tài khoản / Email</label>
+                <input type="text" id="login-email" required placeholder="Nhập email đăng nhập..." class="w-full p-3.5 bg-orange-50/50 border border-orange-200 rounded-2xl text-sm font-medium text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:outline-none transition">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1.5"><i class="fa-solid fa-lock mr-1 text-orange-500"></i> Mật khẩu</label>
+                <input type="password" id="login-pass" required placeholder="••••••••" class="w-full p-3.5 bg-orange-50/50 border border-orange-200 rounded-2xl text-sm font-medium text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:outline-none transition">
+            </div>
+
+            <div id="error-msg" class="hidden text-xs text-rose-500 font-bold text-center bg-rose-50 p-2.5 rounded-xl border border-rose-100"></div>
+
+            <button type="submit" class="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white py-3.5 rounded-2xl text-sm font-bold shadow-lg shadow-orange-500/30 transition transform hover:-translate-y-0.5">
+                <i class="fa-solid fa-right-to-bracket mr-2"></i> Đăng Nhập Hệ Thống
+            </button>
+        </form>
+
+        <!-- DÒNG CHỮ YÊU CẦU DƯỚI NÚT ĐĂNG NHẬP -->
+        <div class="text-center pt-1 border-t border-orange-100">
+            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wide leading-relaxed">
+                Ứng dụng số do Thần Đồng Siêu Nhí nghiên cứu và phát triển.
+            </p>
+        </div>
+    </div>
+
+<script>
+    // Hiệu ứng pháo hoa giấy bay lất phất nền trang
+    function paperConfettiEffect() {
+        const duration = 4 * 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 25, spread: 360, ticks: 100, zIndex: 0 };
+
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        const interval = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
+            if (timeLeft <= 0) {
+                return clearInterval(interval);
+            }
+            const particleCount = 30 * (timeLeft / duration);
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.9), y: Math.random() - 0.2 } }));
+        }, 400);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        paperConfettiEffect();
+    });
+
+    function handleLogin(e) {
+        e.preventDefault();
+        const inputAccount = document.getElementById('login-email').value.trim().toLowerCase();
+        const inputPass = document.getElementById('login-pass').value.trim();
+        const errBox = document.getElementById('error-msg');
+
+        let loggedInName = "";
+        let redirectPage = "";
+
+        // 1. Kiểm tra Admin
+        if (inputAccount === 'admin@thandong.com' || inputAccount === 'admin') {
+            if (inputPass === 'Rich@2007' || inputPass === '123456') {
+                loggedInName = "Cô Hiệu Trưởng";
+                redirectPage = 'adminmn.html';
+                localStorage.setItem('currentUser', JSON.stringify({ role: 'admin', name: loggedInName }));
+            }
+        }
+
+        const db = JSON.parse(localStorage.getItem('than_dong_sieu_nhi_db')) || {};
+
+        // 2. Kiểm tra Giáo viên
+        if (!redirectPage) {
+            const teachersList = db.teachers || [];
+            const foundTeacher = teachersList.find(t => {
+                const emailMatch = t.email && t.email.trim().toLowerCase() === inputAccount;
+                const passMatch = (t.pass === inputPass) || (t.password === inputPass) || (!t.pass && !t.password && inputPass === '123456');
+                return emailMatch && passMatch;
+            });
+
+            if (foundTeacher) {
+                loggedInName = foundTeacher.name;
+                redirectPage = 'gvmn.html';
+                localStorage.setItem('loggedTeacherEmail', foundTeacher.email);
+                localStorage.setItem('currentUser', JSON.stringify({ role: 'teacher', name: foundTeacher.name, data: foundTeacher }));
+            }
+        }
+
+        // 3. Kiểm tra Nhân viên bếp
+        if (!redirectPage) {
+            const kitchenList = db.kitchenStaff || db.kitchen || [];
+            const foundKitchen = kitchenList.find(k => {
+                const emailMatch = k.email && k.email.trim().toLowerCase() === inputAccount;
+                const passMatch = (k.pass === inputPass) || (k.password === inputPass) || (!k.pass && !k.password && inputPass === '123456');
+                return emailMatch && passMatch;
+            });
+
+            if (foundKitchen) {
+                loggedInName = foundKitchen.name;
+                redirectPage = 'bepmn.html';
+                localStorage.setItem('loggedKitchenEmail', foundKitchen.email);
+                localStorage.setItem('currentUser', JSON.stringify({ role: 'kitchen', name: foundKitchen.name, data: foundKitchen }));
+            }
+        }
+
+        // 4. Kiểm tra Học sinh / Phụ huynh
+        if (!redirectPage) {
+            const studentsList = db.students || [];
+            const foundStudent = studentsList.find(s => {
+                const emailMatch = s.email && s.email.trim().toLowerCase() === inputAccount;
+                const passMatch = (s.pass === inputPass) || (s.password === inputPass) || (!s.pass && !s.password && inputPass === '123456');
+                return emailMatch && passMatch;
+            });
+
+            if (foundStudent) {
+                loggedInName = foundStudent.name;
+                redirectPage = 'hsmn.html';
+                localStorage.setItem('loggedStudentEmail', foundStudent.email);
+                localStorage.setItem('currentUser', JSON.stringify({ role: 'student', name: foundStudent.name, data: foundStudent }));
+            }
+        }
+
+        // Nếu thông tin chính xác -> Hiển thị pháo hoa bay lên và câu chào mừng
+        if (redirectPage) {
+            // Pháo hoa bay lên tưng bừng
+            confetti({ particleCount: 200, spread: 120, origin: { y: 0.5 } });
+
+            // Hiển thị khung chào mừng
+            const overlay = document.getElementById('welcome-overlay');
+            const welcomeText = document.getElementById('welcome-text');
+            welcomeText.innerText = `Chào mừng ${loggedInName} đến với Thần Đồng Siêu Nhí!`;
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+
+            setTimeout(() => {
+                window.location.href = redirectPage;
+            }, 1800);
+        } else {
+            errBox.innerText = "Tài khoản hoặc mật khẩu không chính xác! Vui lòng kiểm tra lại.";
+            errBox.classList.remove('hidden');
+        }
+    }
+
+</script>
+<!-- Dán đoạn này vào tất cả các file HTML -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+<!-- Nhúng file cấu hình (phải đảm bảo file này nằm cùng thư mục với các file HTML) -->
+<script src="firebase-config.js"></script>
+</body>
+</html>
